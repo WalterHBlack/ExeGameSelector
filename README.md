@@ -50,4 +50,4 @@ powershell -ExecutionPolicy Bypass -File .\build.ps1
 ## Contributors
 
 - [WalterHBlack](https://github.com/WalterHBlack) — project owner and requirements.
-- OpenAI Codex — AI-assisted development and implementation.
+- [OpenAI Codex](https://github.com/codex) — AI-assisted development and implementation of the launcher interface, recursive scanning, per-filename preferences, dark theme, non-destructive hiding, and automated checks.
