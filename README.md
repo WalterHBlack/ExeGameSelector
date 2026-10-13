@@ -1,35 +1,38 @@
-# NOBK klasör seçici
+# GameSelector
 
-Açılışta oyun klasörü seçtirir; sadece bu klasördeki EXE dosyalarını gösterir. nobk.exe (harf büyüklüğünden bağımsız) ve başlatıcının kendisi listelenmez. Alt klasör taraması varsayılan olarak kapalıdır; kutucuğu işaretleyerek açabilirsiniz. Klasör bağlantıları takip edilmez.
+Oyun klasörünü seçin; klasörün tamamındaki ve bütün alt klasörlerdeki EXE dosyaları otomatik listelenir. Alt klasör taraması her zaman açıktır. Klasör bağlantıları takip edilmez; erişilemeyen klasörlerin sayısı gösterilir. nobk.exe, gameselector.exe ve çalışmakta olan başlatıcının kendi dosyası listelenmez.
 
-## Kullanım
+## Kullanım ve hatırlama
 
-1. dist/nobk.exe dosyasını açın ve örneğin Sonic 4 klasörünü seçin.
+1. gameselector.exe dosyasını açın. İlk kullanımda oyun klasörünü seçin.
 2. EXE'yi seçip çalıştır düğmesine basın veya çift tıklayın.
-3. Gerekirse başlatma parametrelerini girin; parametre olarak verilen yolları tırnak içine alın.
+3. Aynı adla tekrar açtığınızda kayıtlı klasör otomatik taranır; tekrar seçmeniz gerekmez.
+4. Klasörü değiştirmek için Klasör seç düğmesine basın. Yeni seçim aynı EXE adının kaydını günceller.
 
-Klasör seçimini iptal ederseniz Klasör seç düğmesini kullanabilirsiniz. Oyunlar kendi EXE klasörlerinden çalışır. Başlatıcı oyun açıkken küçülür ve açık kalır. Başlatılan işlem kapandığında geri gelir. Ayrı işlem açıp kapanan oyun başlatıcılarında asıl oyun EXE'sini seçin veya pencereyi açık bırakın. Kurulum ve kaldırma EXE'leri de listelenebilir; oyunun dosyasını seçin. TXT/BAT oyun listesi gerekmez.
+Hatırlama başlatıcının dosya adına bağlıdır:
 
-## Steam / NOBK kurulumu
+- SonicMania.exe → o adla seçtiğiniz klasör.
+- nobk.exe → bağımsız bir klasör seçimi.
+- Yeni, daha önce kullanılmamış bir ad → yeniden klasör seçimi.
+- Eski ada geri dönmek → o adın eski seçimini geri getirir.
 
-Önceki rehber Steam'in NOBK klasöründeki nobk.exe girişini kullanıyor:
-https://steamcommunity.com/sharedfiles/filedetails/?id=3765007019
+Aynı adı taşıyan kopyalar, konumları farklı olsa da aynı Windows kullanıcısında aynı kaydı kullanır. Sadece büyük/küçük harf değişikliği yeni kayıt oluşturmaz. Kayıtlı klasör artık yoksa tekrar klasör seçtirilir. Seçimi iptal etmek önceki kaydı değiştirmez.
 
-1. Steam → NOBK Overlay → Özellikler → Yüklü dosyalar → Göz at.
-2. Steam/NOBK ve oyun kapalıyken orijinal nobk.exe dosyasını kurulum klasörü DIŞINA yedekleyin. Diğer NOBK dosyalarını taşımayın.
-3. Paketteki nobk.exe dosyasını NOBK kurulum klasörüne kopyalayın.
-4. Steam'den NOBK Overlay'i açın ve istediğiniz oyun klasörünü seçin. Oyunları NOBK klasörüne taşımak gerekmez.
-5. Oyundayken Shift+Tab ile overlay'i kontrol edin.
+Kayıtlar kullanıcının %LOCALAPPDATA%\GameSelector\Folders klasöründedir. EXE yanında ayar dosyası gerekmez; başka bir Windows kullanıcısına veya bilgisayara kopyalandığında yeniden seçim yapılır. Buradaki kayıt dosyaları otomatik klasör tercihleridir; elle düzenlenen oyun listeleri değildir.
 
-Doğrudan EXE'yi açmak Steam/NOBK oturumunu başlatmaz. Steam girişini değiştirmek için başlatıcı adı nobk.exe olarak kalır; yalnızca oyun listesinden hariç tutulur. Başlatıcı oyunu alt işlem olarak başlatır, ortam değişkenlerini devralır ve açık kalır. Overlay uyumluluğu gerçek Steam/oyun oturumunda kontrol edilmelidir; bu bilgisayarda henüz doğrulanmadı. Yönetici yetkisi isteyen oyunlar için normal başlatma hata gösterebilir. Steam güncellemeleri/dosya doğrulaması orijinal EXE'yi geri getirebilir.
+Oyunlar kendi EXE klasörlerinden başlatılır. Başlatıcı oyun açıkken küçülür ve açık kalır. Başlatılan işlem kapandığında geri gelir. Ayrı işlem açıp kapanan oyun başlatıcılarında asıl oyun EXE'sini seçin veya pencereyi açık bırakın. Başlatma parametreleri isteğe bağlıdır; parametre olarak verilen yolları tırnak içine alın. Kurulum/kaldırma EXE'leri de listelenebilir; oyunun dosyasını seçin. TXT/BAT oyun listesi gerekmez.
 
-Geri almak için Steam ve oyunu kapatıp orijinal yedeği geri kopyalayın veya Steam dosya doğrulamasını kullanın. Bu paket kurulumunuzu otomatik değiştirmez.
+## Steam ve diğer kullanım
+
+GameSelector bağımsız olarak veya başka bir başlatıcı üzerinden kullanılabilir. NOBK kullanmak zorunlu değildir. NOBK/Steam girişinde kullanacaksanız gameselector.exe dosyasının bir kopyasını nobk.exe olarak adlandırın. Orijinal NOBK EXE'sini kurulum klasörü dışına yedekleyip bu kopyayı onun yerine koyun, sonra Steam'den NOBK'yi başlatın. Diğer NOBK dosyalarını taşımayın. nobk.exe adına ait klasör seçimi diğer adlardan ayrıdır.
+
+Kullanıcı önceki sürümde Steam overlay'in çalıştığını doğruladı. Bu sürümde oyunu alt işlem olarak açma, çalışma klasörü, ortam değişkenlerini devralma ve oyun açıkken başlatıcıyı açık tutma davranışı korunur. Güncellenen sürüm gerçek Steam/oyun oturumunda yeniden test edilmedi. Steam güncellemeleri/dosya doğrulaması orijinal EXE'yi geri getirebilir. Geri almak için orijinal yedeği geri kopyalayın veya Steam dosya doğrulamasını kullanın. Bu paket kurulumunuzu otomatik değiştirmez.
 
 ## Dosyalar ve derleme
 
-- Launcher.cs: pencere, tarama ve çalıştırma.
-- build.ps1: Windows .NET Framework derleyicisiyle EXE üretir.
-- Tests.cs: kapsam, hariç tutma ve gerçek alt işlem çalıştırma kontrolleri.
+- Launcher.cs: pencere, otomatik alt klasör taraması, dosya adına göre hatırlama ve çalıştırma.
+- build.ps1: Windows .NET Framework derleyicisiyle gameselector.exe üretir.
+- Tests.cs: tarama, adlara göre ayrı kayıtlar, yeniden açma ve gerçek alt işlem çalıştırma kontrolleri.
 
 Windows ve .NET Framework 4.5+ gerekir (Windows 10/11'de 4.8 uygundur). .NET 8 kurulumu gerekmez.
 Derleme: powershell -ExecutionPolicy Bypass -File .\build.ps1
