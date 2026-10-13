@@ -5,6 +5,7 @@ using System.Drawing;
 using System.IO;
 using System.Security.Cryptography;
 using System.Text;
+using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
@@ -116,6 +117,20 @@ public sealed class Launcher : Form
         bottom.Controls.AddRange(new Control[] { new Label { Text = "Başlatma parametreleri (isteğe bağlı):", AutoSize = true }, arguments, launch });
         layout.Controls.Add(actions); layout.Controls.Add(folderLabel); layout.Controls.Add(games); layout.Controls.Add(bottom); layout.Controls.Add(status);
         Controls.Add(layout);
+        ApplyDarkTheme(this);
+        games.DrawMode = DrawMode.OwnerDrawFixed;
+        games.ItemHeight = 28;
+        games.DrawItem += delegate(object sender, DrawItemEventArgs e)
+        {
+            bool selected = (e.State & DrawItemState.Selected) != 0;
+            using (var brush = new SolidBrush(selected ? Color.FromArgb(48, 76, 112) : games.BackColor))
+                e.Graphics.FillRectangle(brush, e.Bounds);
+            if (e.Index >= 0)
+                TextRenderer.DrawText(e.Graphics, games.Items[e.Index].ToString(), games.Font,
+                    new Rectangle(e.Bounds.X + 8, e.Bounds.Y, e.Bounds.Width - 8, e.Bounds.Height),
+                    games.ForeColor, TextFormatFlags.Left | TextFormatFlags.VerticalCenter | TextFormatFlags.NoPrefix);
+            e.DrawFocusRectangle();
+        };
         pick.Click += delegate { PickFolder(); };
         refresh.Click += delegate { ScanFolder(); };
         games.SelectedIndexChanged += delegate { launch.Enabled = games.SelectedItem != null && !running; };
@@ -132,6 +147,41 @@ public sealed class Launcher : Form
             if (running && MessageBox.Show("Oyun hâlâ çalışıyor. Başlatıcıyı kapatmak Steam'in oturum takibini etkileyebilir. Kapatılsın mı?", Text, MessageBoxButtons.YesNo) != DialogResult.Yes) e.Cancel = true;
             if (!e.Cancel && scan != null) scan.Cancel();
         };
+    }
+    static void ApplyDarkTheme(Control control)
+    {
+        control.BackColor = Color.FromArgb(24, 26, 30);
+        control.ForeColor = Color.FromArgb(232, 234, 238);
+        var button = control as Button;
+        if (button != null)
+        {
+            button.UseVisualStyleBackColor = false;
+            button.FlatStyle = FlatStyle.Flat;
+            button.BackColor = Color.FromArgb(44, 48, 55);
+            button.FlatAppearance.BorderColor = Color.FromArgb(76, 82, 92);
+            button.FlatAppearance.MouseOverBackColor = Color.FromArgb(58, 65, 76);
+            button.FlatAppearance.MouseDownBackColor = Color.FromArgb(48, 76, 112);
+            button.Padding = new Padding(6, 3, 6, 3);
+        }
+        var list = control as ListBox;
+        if (list != null) { list.BackColor = Color.FromArgb(31, 34, 39); list.BorderStyle = BorderStyle.FixedSingle; }
+        var input = control as TextBox;
+        if (input != null) { input.BackColor = Color.FromArgb(36, 40, 46); input.BorderStyle = BorderStyle.FixedSingle; }
+        foreach (Control child in control.Controls) ApplyDarkTheme(child);
+    }
+    [DllImport("dwmapi.dll")]
+    static extern int DwmSetWindowAttribute(IntPtr window, int attribute, ref int value, int size);
+    protected override void OnHandleCreated(EventArgs e)
+    {
+        base.OnHandleCreated(e);
+        try
+        {
+            int enabled = 1;
+            if (DwmSetWindowAttribute(Handle, 20, ref enabled, sizeof(int)) != 0)
+                DwmSetWindowAttribute(Handle, 19, ref enabled, sizeof(int));
+        }
+        catch (DllNotFoundException) { }
+        catch (EntryPointNotFoundException) { }
     }
     void PickFolder()
     {
