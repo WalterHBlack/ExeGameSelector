@@ -36,3 +36,8 @@ Kullanıcı önceki sürümde Steam overlay'in çalıştığını doğruladı. B
 
 Windows ve .NET Framework 4.5+ gerekir (Windows 10/11'de 4.8 uygundur). .NET 8 kurulumu gerekmez.
 Derleme: powershell -ExecutionPolicy Bypass -File .\build.ps1
+
+## Listeden gizleme
+
+Seçili EXE'yi gizle düğmesi dosyayı silmeden listeden kaldırır. Gizlenen tam dosya yolları başlatıcının EXE adına göre ayrı kaydedilir; yeniden açınca ve Yenile'ye basınca gizli kalır. Gizlenenleri geri göster düğmesi bu başlatıcı adına ait tüm gizlemeleri kaldırır (diğer klasörlerdeki gizlemeler de dahil). Oyun dosyaları değiştirilmez. Gizlenen dosyanın adı veya konumu değişirse yeni yol tekrar listelenir.
+

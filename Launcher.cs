@@ -54,10 +54,14 @@ public sealed class FolderMemory
     readonly string file;
     public FolderMemory(string settingsRoot, string executablePath)
     {
+        file = SettingsFile(settingsRoot, executablePath);
+    }
+    public static string SettingsFile(string settingsRoot, string executablePath)
+    {
         // Windows filenames are case-insensitive; location deliberately does not affect identity.
         string name = Path.GetFileName(executablePath).ToUpperInvariant();
         using (var hash = SHA256.Create())
-            file = Path.Combine(settingsRoot, BitConverter.ToString(hash.ComputeHash(Encoding.UTF8.GetBytes(name))).Replace("-", "") + ".folder");
+            return Path.Combine(settingsRoot, BitConverter.ToString(hash.ComputeHash(Encoding.UTF8.GetBytes(name))).Replace("-", "") + ".folder");
     }
     public string Load()
     {
@@ -85,6 +89,33 @@ public sealed class FolderMemory
     }
 }
 
+public sealed class HiddenGames
+{
+    readonly string file;
+    public HiddenGames(string settingsRoot, string executablePath)
+    {
+        file = Path.ChangeExtension(FolderMemory.SettingsFile(settingsRoot, executablePath), ".hidden");
+    }
+    public HashSet<string> Load()
+    {
+        return new HashSet<string>(File.Exists(file) ? File.ReadAllLines(file, Encoding.UTF8) : new string[0], StringComparer.OrdinalIgnoreCase);
+    }
+    public void Hide(string path)
+    {
+        var paths = Load(); paths.Add(Path.GetFullPath(path));
+        Directory.CreateDirectory(Path.GetDirectoryName(file));
+        string temp = file + "." + Guid.NewGuid().ToString("N") + ".tmp";
+        try
+        {
+            File.WriteAllLines(temp, paths, Encoding.UTF8);
+            if (File.Exists(file)) File.Replace(temp, file, null);
+            else File.Move(temp, file);
+        }
+        finally { if (File.Exists(temp)) File.Delete(temp); }
+    }
+    public void RestoreAll() { if (File.Exists(file)) File.Delete(file); }
+}
+
 public sealed class Launcher : Form
 {
     readonly Label folderLabel = new Label { AutoSize = true, Text = "Bir oyun klasörü seç." };
@@ -93,6 +124,9 @@ public sealed class Launcher : Form
     readonly ListBox games = new ListBox { Dock = DockStyle.Fill, HorizontalScrollbar = true };
     readonly Button pick = new Button { Text = "Klasör seç", AutoSize = true };
     readonly Button refresh = new Button { Text = "Yenile", AutoSize = true };
+    readonly Button hide = new Button { Text = "Seçili EXE'yi gizle", AutoSize = true, Enabled = false };
+    readonly Button restore = new Button { Text = "Gizlenenleri geri göster", AutoSize = true };
+    readonly HiddenGames hidden = new HiddenGames(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "GameSelector", "Folders"), Application.ExecutablePath);
     readonly Button launch = new Button { Text = "Seçili EXE'yi çalıştır", AutoSize = true, Enabled = false };
     readonly TextBox arguments = new TextBox { Width = 300 };
     string folder;
@@ -112,7 +146,7 @@ public sealed class Launcher : Form
         layout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
         layout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
         var actions = new FlowLayoutPanel { AutoSize = true, Dock = DockStyle.Fill };
-        actions.Controls.AddRange(new Control[] { pick, refresh });
+        actions.Controls.AddRange(new Control[] { pick, refresh, hide, restore });
         var bottom = new FlowLayoutPanel { AutoSize = true, Dock = DockStyle.Fill };
         bottom.Controls.AddRange(new Control[] { new Label { Text = "Başlatma parametreleri (isteğe bağlı):", AutoSize = true }, arguments, launch });
         layout.Controls.Add(actions); layout.Controls.Add(folderLabel); layout.Controls.Add(games); layout.Controls.Add(bottom); layout.Controls.Add(status);
@@ -133,7 +167,20 @@ public sealed class Launcher : Form
         };
         pick.Click += delegate { PickFolder(); };
         refresh.Click += delegate { ScanFolder(); };
-        games.SelectedIndexChanged += delegate { launch.Enabled = games.SelectedItem != null && !running; };
+        games.SelectedIndexChanged += delegate { launch.Enabled = hide.Enabled = games.SelectedItem != null && !running; };
+        hide.Click += delegate
+        {
+            var item = games.SelectedItem as GameItem;
+            if (item == null || running) return;
+            try { hidden.Hide(item.Path); ScanFolder(); }
+            catch (Exception ex) { MessageBox.Show(this, "Gizleme kaydı yazılamadı: " + ex.Message, Text, MessageBoxButtons.OK, MessageBoxIcon.Error); }
+        };
+        restore.Click += delegate
+        {
+            if (running) return;
+            try { hidden.RestoreAll(); ScanFolder(); }
+            catch (Exception ex) { MessageBox.Show(this, "Gizleme kaydı kaldırılamadı: " + ex.Message, Text, MessageBoxButtons.OK, MessageBoxIcon.Error); }
+        };
         games.DoubleClick += delegate { LaunchGame(); };
         launch.Click += delegate { LaunchGame(); };
         Shown += delegate
@@ -200,15 +247,18 @@ public sealed class Launcher : Form
         if (scan != null) scan.Cancel();
         var current = scan = new CancellationTokenSource();
         string root = folder;
-        games.Items.Clear(); launch.Enabled = false; status.Text = "EXE dosyaları aranıyor…";
+        games.Items.Clear(); launch.Enabled = hide.Enabled = false; status.Text = "EXE dosyaları aranıyor…";
         var warnings = new List<string>();
         try
         {
             var files = await Task.Run(() => GameScanner.Scan(root, true, Application.ExecutablePath, current.Token, warnings));
             if (current.IsCancellationRequested || IsDisposed) return;
+            var hiddenPaths = hidden.Load();
+            int hiddenCount = files.RemoveAll(file => hiddenPaths.Contains(file));
             foreach (string file in files) games.Items.Add(new GameItem(file, file.Substring(root.TrimEnd(Path.DirectorySeparatorChar).Length + 1)));
             status.Text = files.Count == 0 ? "Bu klasörde ve alt klasörlerinde EXE bulunamadı." : files.Count + " EXE bulundu (alt klasörler dahil). Çalıştırmak istediğini seç.";
             if (warnings.Count > 0) status.Text += "  Erişilemeyen klasör: " + warnings.Count;
+            if (hiddenCount > 0) status.Text += "  Gizlenen EXE: " + hiddenCount;
             if (files.Count > 0) games.SelectedIndex = 0;
         }
         catch (OperationCanceledException) { }
@@ -223,7 +273,7 @@ public sealed class Launcher : Form
             using (var process = Process.Start(GameScanner.LaunchInfo(item.Path, arguments.Text)))
             {
                 if (process == null) throw new InvalidOperationException("İşlem başlatılamadı.");
-                running = true; launch.Enabled = pick.Enabled = refresh.Enabled = arguments.Enabled = false;
+                running = true; launch.Enabled = hide.Enabled = restore.Enabled = pick.Enabled = refresh.Enabled = arguments.Enabled = false;
                 status.Text = "Oyun çalışıyor. Steam oturumu için başlatıcı açık kalıyor.";
                 WindowState = FormWindowState.Minimized;
                 await Task.Run(() => process.WaitForExit());
@@ -236,7 +286,7 @@ public sealed class Launcher : Form
         finally
         {
             running = false;
-            if (!IsDisposed) { pick.Enabled = refresh.Enabled = arguments.Enabled = true; launch.Enabled = games.SelectedItem != null; }
+            if (!IsDisposed) { restore.Enabled = pick.Enabled = refresh.Enabled = arguments.Enabled = true; launch.Enabled = hide.Enabled = games.SelectedItem != null; }
         }
     }
     sealed class GameItem

@@ -36,6 +36,15 @@ class Tests {
    Check(mania.Load() == root && nobk.Load() == root,"Changing folder replaces saved selection");
    string removed = Path.Combine(root,"removed"); Directory.CreateDirectory(removed); mania.Save(removed); Directory.Delete(removed);
    Check(mania.Load() == null,"Missing saved folder falls back to picker");
+   var hidden = new HiddenGames(settings, Path.Combine(root,"SonicMania.exe"));
+   hidden.Hide(game);
+   Check(File.Exists(game),"Hiding keeps the EXE on disk");
+   Check(new HiddenGames(settings,Path.Combine(root,"SonicMania.exe")).Load().Contains(game),"Hidden EXE survives reopening");
+   Check(new HiddenGames(settings,Path.Combine(root,"nobk.exe")).Load().Count == 0,"Hidden list is isolated by EXE name");
+   hidden.Hide(game.ToUpperInvariant());
+   Check(hidden.Load().Count == 1,"Hidden paths are case insensitive");
+   hidden.RestoreAll();
+   Check(hidden.Load().Count == 0 && File.Exists(game),"Restore clears only hidden preferences");
    string output = Path.Combine(root,"probe output.txt"); Environment.SetEnvironmentVariable("NOBK_TEST_MARKER","inherited");
    using(var process = Process.Start(GameScanner.LaunchInfo(game,"--probe \"" + output + "\""))) { Check(process.WaitForExit(10000) && process.ExitCode == 0,"Real launch with Unicode/spaced paths and quoted arguments"); }
    Check(File.ReadAllText(output) == root + "\ninherited","Working directory and inherited environment"); return 0;
