@@ -1,43 +1,53 @@
 # GameSelector
 
-Oyun klasörünü seçin; klasörün tamamındaki ve bütün alt klasörlerdeki EXE dosyaları otomatik listelenir. Alt klasör taraması her zaman açıktır. Klasör bağlantıları takip edilmez; erişilemeyen klasörlerin sayısı gösterilir. nobk.exe, gameselector.exe ve çalışmakta olan başlatıcının kendi dosyası listelenmez.
+GameSelector is a lightweight Windows launcher for selecting and launching locally installed games through Steam, including cracked games. Add it as a non-Steam shortcut, choose a game folder, and launch the desired executable from its automatically generated list.
 
-## Kullanım ve hatırlama
+## Features
 
-1. gameselector.exe dosyasını açın. İlk kullanımda oyun klasörünü seçin.
-2. EXE'yi seçip çalıştır düğmesine basın veya çift tıklayın.
-3. Aynı adla tekrar açtığınızda kayıtlı klasör otomatik taranır; tekrar seçmeniz gerekmez.
-4. Klasörü değiştirmek için Klasör seç düğmesine basın. Yeni seçim aynı EXE adının kaydını günceller.
+- Automatically scans the selected folder and all subfolders for executable files.
+- Remembers the selected folder separately for each launcher filename.
+- Includes a dark interface and optional launch arguments.
+- Hides unwanted executables from the selector without deleting them, with an option to restore all hidden entries.
+- Launches games from their own working directories and stays open while the launched process runs.
+- Requires no manually maintained game lists.
 
-Hatırlama başlatıcının dosya adına bağlıdır:
+## Download and use
 
-- SonicMania.exe → o adla seçtiğiniz klasör.
-- nobk.exe → bağımsız bir klasör seçimi.
-- Yeni, daha önce kullanılmamış bir ad → yeniden klasör seçimi.
-- Eski ada geri dönmek → o adın eski seçimini geri getirir.
+Download **GameSelector.zip** from [Releases](https://github.com/WalterHBlack/nobk-folder-launcher/releases/latest), extract it, and open **gameselector.exe**.
 
-Aynı adı taşıyan kopyalar, konumları farklı olsa da aynı Windows kullanıcısında aynı kaydı kullanır. Sadece büyük/küçük harf değişikliği yeni kayıt oluşturmaz. Kayıtlı klasör artık yoksa tekrar klasör seçtirilir. Seçimi iptal etmek önceki kaydı değiştirmez.
+1. Select a game folder on first launch.
+2. Select the game executable and click the launch button or double-click it.
+3. Use the folder selection button whenever you want to change the saved folder.
 
-Kayıtlar kullanıcının %LOCALAPPDATA%\GameSelector\Folders klasöründedir. EXE yanında ayar dosyası gerekmez; başka bir Windows kullanıcısına veya bilgisayara kopyalandığında yeniden seçim yapılır. Buradaki kayıt dosyaları otomatik klasör tercihleridir; elle düzenlenen oyun listeleri değildir.
+The application interface is currently in Turkish. Its buttons provide folder selection, refresh, hide selected executable, restore hidden entries, and launch.
 
-Oyunlar kendi EXE klasörlerinden başlatılır. Başlatıcı oyun açıkken küçülür ve açık kalır. Başlatılan işlem kapandığında geri gelir. Ayrı işlem açıp kapanan oyun başlatıcılarında asıl oyun EXE'sini seçin veya pencereyi açık bırakın. Başlatma parametreleri isteğe bağlıdır; parametre olarak verilen yolları tırnak içine alın. Kurulum/kaldırma EXE'leri de listelenebilir; oyunun dosyasını seçin. TXT/BAT oyun listesi gerekmez.
+The folder and hidden entries are saved per launcher filename. Renaming the launcher to a new name creates a separate selection; returning to a previously used name restores that name's settings. Copies with the same name share settings for the current Windows user, regardless of their location. Settings are stored under `%LOCALAPPDATA%\GameSelector\Folders`.
 
-## Steam ve diğer kullanım
+Hiding affects only the selector list. Restoring hidden entries clears all hidden preferences for the current launcher name. Moving or renaming a hidden executable gives it a new path, so it may appear again. Folder links are not followed during scanning. The launcher itself and executables named `nobk.exe` or `gameselector.exe` are excluded from the list.
 
-GameSelector bağımsız olarak veya başka bir başlatıcı üzerinden kullanılabilir. NOBK kullanmak zorunlu değildir. NOBK/Steam girişinde kullanacaksanız gameselector.exe dosyasının bir kopyasını nobk.exe olarak adlandırın. Orijinal NOBK EXE'sini kurulum klasörü dışına yedekleyip bu kopyayı onun yerine koyun, sonra Steam'den NOBK'yi başlatın. Diğer NOBK dosyalarını taşımayın. nobk.exe adına ait klasör seçimi diğer adlardan ayrıdır.
+## Launch through Steam
 
-Kullanıcı önceki sürümde Steam overlay'in çalıştığını doğruladı. Bu sürümde oyunu alt işlem olarak açma, çalışma klasörü, ortam değişkenlerini devralma ve oyun açıkken başlatıcıyı açık tutma davranışı korunur. Güncellenen sürüm gerçek Steam/oyun oturumunda yeniden test edilmedi. Steam güncellemeleri/dosya doğrulaması orijinal EXE'yi geri getirebilir. Geri almak için orijinal yedeği geri kopyalayın veya Steam dosya doğrulamasını kullanın. Bu paket kurulumunuzu otomatik değiştirmez.
+Add GameSelector to Steam using **Add a Game → Add a Non-Steam Game**, enable Steam Overlay for the shortcut, and launch the shortcut from your Steam library. Select the game's executable inside GameSelector. Keep the selector open while playing.
 
-## Dosyalar ve derleme
+GameSelector can also be used as an entry executable in an existing Steam launcher setup. Back up the original entry executable before replacing it with a renamed copy of GameSelector. It can also run independently of Steam.
 
-- Launcher.cs: pencere, otomatik alt klasör taraması, dosya adına göre hatırlama ve çalıştırma.
-- build.ps1: Windows .NET Framework derleyicisiyle gameselector.exe üretir.
-- Tests.cs: tarama, adlara göre ayrı kayıtlar, yeniden açma ve gerçek alt işlem çalıştırma kontrolleri.
+Steam Overlay compatibility depends on the game, permissions, and launch chain. A game launcher that immediately hands off to another process may require selecting the actual game executable or keeping GameSelector open manually. GameSelector does not download games or modify their DRM.
 
-Windows ve .NET Framework 4.5+ gerekir (Windows 10/11'de 4.8 uygundur). .NET 8 kurulumu gerekmez.
-Derleme: powershell -ExecutionPolicy Bypass -File .\build.ps1
+## Requirements and building
 
-## Listeden gizleme
+Windows with .NET Framework 4.5 or later. Windows 10/11 installations with .NET Framework 4.8 are suitable.
 
-Seçili EXE'yi gizle düğmesi dosyayı silmeden listeden kaldırır. Gizlenen tam dosya yolları başlatıcının EXE adına göre ayrı kaydedilir; yeniden açınca ve Yenile'ye basınca gizli kalır. Gizlenenleri geri göster düğmesi bu başlatıcı adına ait tüm gizlemeleri kaldırır (diğer klasörlerdeki gizlemeler de dahil). Oyun dosyaları değiştirilmez. Gizlenen dosyanın adı veya konumu değişirse yeni yol tekrar listelenir.
+Build from PowerShell:
 
+```powershell
+powershell -ExecutionPolicy Bypass -File .\build.ps1
+```
+
+- `Launcher.cs`: interface, scanning, saved preferences, and game launching.
+- `build.ps1`: builds `dist/gameselector.exe` with the Windows .NET Framework compiler.
+- `Tests.cs`: checks scanning, per-name settings, non-destructive hiding, and process launching.
+
+## Contributors
+
+- [WalterHBlack](https://github.com/WalterHBlack) — project owner and requirements.
+- OpenAI Codex — AI-assisted development and implementation.
