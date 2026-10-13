@@ -1,6 +1,6 @@
-# GameSelector
+# ExeGameSelector
 
-GameSelector is a lightweight Windows launcher for selecting and launching locally installed games through Steam, including cracked games. Add it as a non-Steam shortcut, choose a game folder, and launch the desired executable from its automatically generated list.
+ExeGameSelector is a lightweight Windows launcher for selecting and launching locally installed games through Steam, including cracked games. Add it as a non-Steam shortcut, choose a game folder, and launch the desired executable from its automatically generated list.
 
 ## Features
 
