@@ -46,8 +46,3 @@ powershell -ExecutionPolicy Bypass -File .\build.ps1
 - `Launcher.cs`: interface, scanning, saved preferences, and game launching.
 - `build.ps1`: builds `dist/gameselector.exe` with the Windows .NET Framework compiler.
 - `Tests.cs`: checks scanning, per-name settings, non-destructive hiding, and process launching.
-
-## Contributors
-
-- [WalterHBlack](https://github.com/WalterHBlack) — project owner and requirements.
-- [OpenAI Codex](https://github.com/codex) — AI-assisted development and implementation of the launcher interface, recursive scanning, per-filename preferences, dark theme, non-destructive hiding, and automated checks.
