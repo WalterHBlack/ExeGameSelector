@@ -1,0 +1,157 @@
+using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Drawing;
+using System.IO;
+using System.Threading;
+using System.Threading.Tasks;
+using System.Windows.Forms;
+
+public static class GameScanner
+{
+    public static List<string> Scan(string root, bool recursive, string self, CancellationToken token, List<string> warnings)
+    {
+        var result = new List<string>();
+        var pending = new Stack<string>();
+        pending.Push(Path.GetFullPath(root));
+        while (pending.Count > 0)
+        {
+            token.ThrowIfCancellationRequested();
+            string folder = pending.Pop();
+            try
+            {
+                foreach (string file in Directory.GetFiles(folder))
+                {
+                    token.ThrowIfCancellationRequested();
+                    if (string.Equals(Path.GetExtension(file), ".exe", StringComparison.OrdinalIgnoreCase)
+                        && !string.Equals(Path.GetFileName(file), "nobk.exe", StringComparison.OrdinalIgnoreCase)
+                        && !string.Equals(Path.GetFullPath(file), self, StringComparison.OrdinalIgnoreCase)) result.Add(file);
+                }
+                if (recursive)
+                    foreach (string child in Directory.GetDirectories(folder))
+                    {
+                        if ((File.GetAttributes(child) & FileAttributes.ReparsePoint) == 0) pending.Push(child);
+                    }
+            }
+            catch (UnauthorizedAccessException) { warnings.Add(folder); }
+            catch (IOException) { warnings.Add(folder); }
+        }
+        result.Sort(StringComparer.OrdinalIgnoreCase);
+        return result;
+    }
+    public static ProcessStartInfo LaunchInfo(string file, string arguments)
+    {
+        return new ProcessStartInfo { FileName = Path.GetFullPath(file), WorkingDirectory = Path.GetDirectoryName(Path.GetFullPath(file)), Arguments = arguments, UseShellExecute = false };
+    }
+}
+
+public sealed class Launcher : Form
+{
+    readonly Label folderLabel = new Label { AutoSize = true, Text = "Bir oyun klasörü seç." };
+    readonly Label status = new Label { AutoSize = true, Text = "" };
+    readonly CheckBox recursive = new CheckBox { AutoSize = true, Text = "Alt klasörleri de tara" };
+    readonly ListBox games = new ListBox { Dock = DockStyle.Fill, HorizontalScrollbar = true };
+    readonly Button pick = new Button { Text = "Klasör seç", AutoSize = true };
+    readonly Button refresh = new Button { Text = "Yenile", AutoSize = true };
+    readonly Button launch = new Button { Text = "Seçili EXE'yi çalıştır", AutoSize = true, Enabled = false };
+    readonly TextBox arguments = new TextBox { Width = 300 };
+    string folder;
+    CancellationTokenSource scan;
+    bool running;
+
+    public Launcher()
+    {
+        Text = "NOBK • Oyun klasörü seçici";
+        Size = new Size(800, 520); MinimumSize = new Size(600, 380);
+        StartPosition = FormStartPosition.CenterScreen;
+        Font = new Font("Segoe UI", 10);
+        var layout = new TableLayoutPanel { Dock = DockStyle.Fill, Padding = new Padding(14), ColumnCount = 1, RowCount = 5 };
+        layout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+        layout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+        layout.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
+        layout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+        layout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+        var actions = new FlowLayoutPanel { AutoSize = true, Dock = DockStyle.Fill };
+        actions.Controls.AddRange(new Control[] { pick, refresh, recursive });
+        var bottom = new FlowLayoutPanel { AutoSize = true, Dock = DockStyle.Fill };
+        bottom.Controls.AddRange(new Control[] { new Label { Text = "Başlatma parametreleri (isteğe bağlı):", AutoSize = true }, arguments, launch });
+        layout.Controls.Add(actions); layout.Controls.Add(folderLabel); layout.Controls.Add(games); layout.Controls.Add(bottom); layout.Controls.Add(status);
+        Controls.Add(layout);
+        pick.Click += delegate { PickFolder(); };
+        refresh.Click += delegate { ScanFolder(); };
+        recursive.CheckedChanged += delegate { ScanFolder(); };
+        games.SelectedIndexChanged += delegate { launch.Enabled = games.SelectedItem != null && !running; };
+        games.DoubleClick += delegate { LaunchGame(); };
+        launch.Click += delegate { LaunchGame(); };
+        Shown += delegate { PickFolder(); };
+        FormClosing += delegate(object sender, FormClosingEventArgs e)
+        {
+            if (running && MessageBox.Show("Oyun hâlâ çalışıyor. Başlatıcıyı kapatmak Steam'in oturum takibini etkileyebilir. Kapatılsın mı?", Text, MessageBoxButtons.YesNo) != DialogResult.Yes) e.Cancel = true;
+            if (!e.Cancel && scan != null) scan.Cancel();
+        };
+    }
+    void PickFolder()
+    {
+        using (var dialog = new FolderBrowserDialog { Description = "EXE dosyalarını görmek istediğin oyun klasörünü seç", ShowNewFolderButton = false, SelectedPath = folder ?? "" })
+        {
+            if (dialog.ShowDialog(this) != DialogResult.OK) return;
+            folder = dialog.SelectedPath; folderLabel.Text = folder; ScanFolder();
+        }
+    }
+    async void ScanFolder()
+    {
+        if (folder == null || running) return;
+        if (scan != null) scan.Cancel();
+        var current = scan = new CancellationTokenSource();
+        string root = folder; bool recurse = recursive.Checked;
+        games.Items.Clear(); launch.Enabled = false; status.Text = "EXE dosyaları aranıyor…";
+        var warnings = new List<string>();
+        try
+        {
+            var files = await Task.Run(() => GameScanner.Scan(root, recurse, Application.ExecutablePath, current.Token, warnings));
+            if (current.IsCancellationRequested || IsDisposed) return;
+            foreach (string file in files) games.Items.Add(new GameItem(file, file.Substring(root.TrimEnd(Path.DirectorySeparatorChar).Length + 1)));
+            status.Text = files.Count == 0 ? "Bu klasörde EXE bulunamadı. Gerekirse alt klasör taramasını aç." : files.Count + " EXE bulundu. Çalıştırmak istediğini seç.";
+            if (warnings.Count > 0) status.Text += "  Erişilemeyen klasör: " + warnings.Count;
+            if (files.Count > 0) games.SelectedIndex = 0;
+        }
+        catch (OperationCanceledException) { }
+        catch (Exception ex) { if (!IsDisposed && !current.IsCancellationRequested) status.Text = "Tarama hatası: " + ex.Message; }
+    }
+    async void LaunchGame()
+    {
+        var item = games.SelectedItem as GameItem;
+        if (item == null || running) return;
+        try
+        {
+            using (var process = Process.Start(GameScanner.LaunchInfo(item.Path, arguments.Text)))
+            {
+                if (process == null) throw new InvalidOperationException("İşlem başlatılamadı.");
+                running = true; launch.Enabled = pick.Enabled = refresh.Enabled = recursive.Enabled = arguments.Enabled = false;
+                status.Text = "Oyun çalışıyor. Steam oturumu için başlatıcı açık kalıyor.";
+                WindowState = FormWindowState.Minimized;
+                await Task.Run(() => process.WaitForExit());
+            }
+            if (IsDisposed) return;
+            WindowState = FormWindowState.Normal;
+            status.Text = "Başlatılan EXE kapandı. Oyun ayrı bir işlem açtıysa başlatıcıyı açık bırak.";
+        }
+        catch (Exception ex) { if (!IsDisposed) MessageBox.Show(this, ex.Message, "Oyun başlatılamadı", MessageBoxButtons.OK, MessageBoxIcon.Error); }
+        finally
+        {
+            running = false;
+            if (!IsDisposed) { pick.Enabled = refresh.Enabled = recursive.Enabled = arguments.Enabled = true; launch.Enabled = games.SelectedItem != null; }
+        }
+    }
+    sealed class GameItem
+    {
+        public readonly string Path; readonly string name;
+        public GameItem(string path, string display) { Path = path; name = display; }
+        public override string ToString() { return name; }
+    }
+    [STAThread]
+    public static void Main()
+    {
+        Application.EnableVisualStyles(); Application.SetCompatibleTextRenderingDefault(false); Application.Run(new Launcher());
+    }
+}
