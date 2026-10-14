@@ -1,5 +1,7 @@
 # ExeGameSelector
 
+**Language:** English
+
 ExeGameSelector is a lightweight launcher for people who want to launch games through Steam and track their playtime.
 
 ## How to Use
