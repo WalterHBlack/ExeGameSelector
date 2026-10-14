@@ -4,7 +4,7 @@ ExeGameSelector is an executable selector for people who want to launch games th
 
 ## How to use
 
-First, download the executable from the Releases page. Then, extract it into the folder of the Steam game whose playtime you want to track.
+First, download the executable or ZIP from the Releases page. Then, extract it into the folder of the Steam game whose playtime you want to track.  <img width="1692" height="1003" alt="Ekran görüntüsü 2026-10-14 031200" src="https://github.com/user-attachments/assets/5c6f67af-e339-4b09-837d-db6bde7ee832" />
 
 
 ## Requirements and building
